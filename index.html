@@ -969,7 +969,6 @@ function update() {
   frameN++;
   updateParticles();
   updateFloatingTexts();
-  tickGlitches();
 
   if (player.fireballCooldown > 0) player.fireballCooldown--;
 
@@ -1042,7 +1041,6 @@ function update() {
       // Frozen: any contact kills
       if (hit(player, d)) {
         d.alive = false; d.dying = 25; player.vy = -6; score += 300;
-        spawnGlitchGhost(d);
         sfxDonkeyDeath();
         spawnParticles(d.x+d.w/2, d.y+d.h/2, 10, '#44ccff');
         spawnFloatingText(d.x+d.w/2, d.y, '+300 ICE!', '#44ccff');
@@ -1328,9 +1326,6 @@ function drawDonkey(d) {
   if (!d.alive && d.dying <= 0) return;
   const sx = Math.round(d.x - camera.x), sy = Math.round(d.y);
   if (sx < -60 || sx > W+60) return;
-  // NES sprite flicker: when 5+ donkeys on screen, random ones drop frames
-  const visibleCount = donkeys.filter(x => x.alive && Math.abs(x.x - camera.x - W/2) < W).length;
-  if (visibleCount >= 5 && d.alive && Math.random() < 0.12) return;
   if (!d.alive && d.dying > 0) {
     ctx.save(); ctx.translate(sx+d.w/2, sy+d.h); ctx.scale(1.7, 0.12);
     px(-d.w/2,-d.h, d.w, d.h, '#aa5500'); ctx.restore(); return;
@@ -1499,8 +1494,7 @@ function drawFlag() {
 
 function drawHUD() {
   ctx.fillStyle = '#000'; ctx.fillRect(4, 4, 230, 26);
-  const scoreDisp = glitch.scoreGarble > 0 ? `SCORE: ${glitch.scoreVal}  LVL: ${currentLevel+1}` : `SCORE: ${score}  LVL: ${currentLevel+1}`;
-  txt(scoreDisp, 10, 22, 14, '#ffffff', false);
+  txt(`SCORE: ${score}  LVL: ${currentLevel+1}`, 10, 22, 14, '#ffffff', false);
 
   const pct = Math.min(player.x / ((LW-3)*TILE), 1);
   ctx.fillStyle = '#000'; ctx.fillRect(W/2-100, 6, 200, 12);
@@ -1511,9 +1505,8 @@ function drawHUD() {
 
   // Level timer
   const secsLeft = Math.ceil(levelTimer / 60);
-  const timerDisp = glitch.timerGarble > 0 ? glitch.timerVal : secsLeft;
   const timerCol = secsLeft <= 30 ? (Math.floor(Date.now()/250)%2 ? '#ff0000' : '#ff8800') : secsLeft <= 60 ? '#ffaa00' : '#ffffff';
-  txt(`TIME: ${timerDisp}`, W-110, 22, 14, timerCol, false);
+  txt(`TIME: ${secsLeft}`, W-110, 22, 14, timerCol, false);
 
   // Power indicator
   if (player.power === 'fire') {
@@ -1790,107 +1783,6 @@ function drawTutorial() {
   txt(`${tutorialPage+1} / ${TUTORIAL_PAGES.length}`, W/2+190, 334, 11, '#555', false);
 }
 
-// ── 1982 Glitch System ─────────────────────────
-const glitch = {
-  tear: 0, tearY: 0, tearH: 0, tearShift: 0,   // screen tear
-  noise: 0,                                       // random pixel scatter
-  tint: 0, tintCol: '',                           // full-screen color flash
-  scoreGarble: 0, scoreVal: '',                   // HUD score corruption
-  timerGarble: 0, timerVal: 0,                    // HUD timer corruption
-  ghosts: [],                                     // dead-enemy ghost flashes [{x,y,w,h,col,t}]
-  scanFlicker: 0,                                 // scanline row flicker
-};
-
-function tickGlitches() {
-  if (glitch.tear   > 0) glitch.tear--;
-  if (glitch.noise  > 0) glitch.noise--;
-  if (glitch.tint   > 0) glitch.tint--;
-  if (glitch.scoreGarble > 0) glitch.scoreGarble--;
-  if (glitch.timerGarble > 0) glitch.timerGarble--;
-  if (glitch.scanFlicker > 0) glitch.scanFlicker--;
-  for (let i = glitch.ghosts.length-1; i >= 0; i--) { glitch.ghosts[i].t--; if (glitch.ghosts[i].t <= 0) glitch.ghosts.splice(i,1); }
-
-  const r = Math.random;
-  // Screen tear: rare horizontal band shifts sideways
-  if (!glitch.tear && r() < 0.0018) {
-    glitch.tear     = 2 + (r()*3|0);
-    glitch.tearY    = (r() * (H-10)) | 0;
-    glitch.tearH    = 1 + (r()*8|0);
-    glitch.tearShift = ((r()*24|0)+4) * (r()<0.5?1:-1);
-  }
-  // Random pixel scatter
-  if (!glitch.noise && r() < 0.0025) glitch.noise = 1 + (r()*2|0);
-  // Full-screen color tint flash
-  if (!glitch.tint && r() < 0.0008) {
-    glitch.tint = 1;
-    const c = r();
-    glitch.tintCol = c < 0.4 ? 'rgba(255,0,0,0.12)' : c < 0.7 ? 'rgba(0,80,255,0.1)' : 'rgba(255,255,255,0.08)';
-  }
-  // Score digit garble
-  if (!glitch.scoreGarble && r() < 0.0012) {
-    glitch.scoreGarble = 1;
-    glitch.scoreVal = String(score).split('').map(d => r()<0.4 ? '0123456789ABCDEF'[r()*16|0] : d).join('');
-  }
-  // Timer digit garble
-  if (!glitch.timerGarble && r() < 0.001) {
-    glitch.timerGarble = 1;
-    glitch.timerVal = (Math.ceil(levelTimer/60) + ((r()*40|0)-20)) | 0;
-  }
-  // Scanline row flicker
-  if (!glitch.scanFlicker && r() < 0.002) glitch.scanFlicker = 1 + (r()*3|0);
-}
-
-function spawnGlitchGhost(d) {
-  if (glitch.ghosts.length < 4 && Math.random() < 0.3) {
-    glitch.ghosts.push({ x: d.x, y: d.y, w: d.w, h: d.h, col: '#884400', t: 4 + (Math.random()*4|0) });
-  }
-}
-
-function drawGlitches() {
-  // Scanline row flicker: random horizontal strips of inverted brightness
-  if (glitch.scanFlicker > 0) {
-    ctx.save();
-    ctx.globalCompositeOperation = 'screen';
-    ctx.fillStyle = 'rgba(80,80,80,0.18)';
-    for (let y = (Math.random()*8|0); y < H; y += 8 + (Math.random()*6|0))
-      ctx.fillRect(0, y, W, 1 + (Math.random()*2|0));
-    ctx.restore();
-  }
-  // Screen tear: copy strip offset (draw solid garble band)
-  if (glitch.tear > 0) {
-    // Draw the strip from the already-rendered canvas, shifted
-    ctx.drawImage(ctx.canvas, 0, glitch.tearY, W, glitch.tearH,
-                              glitch.tearShift, glitch.tearY, W, glitch.tearH);
-    // Add RGB noise in the seam
-    for (let x = 0; x < W; x += 3) {
-      if (Math.random() < 0.35) {
-        ctx.fillStyle = `rgb(${Math.random()*255|0},${Math.random()*255|0},${Math.random()*255|0})`;
-        ctx.fillRect(x, glitch.tearY, 3, glitch.tearH);
-      }
-    }
-  }
-  // Random pixel scatter
-  if (glitch.noise > 0) {
-    const count = 6 + (Math.random()*12|0);
-    for (let i = 0; i < count; i++) {
-      ctx.fillStyle = `rgb(${Math.random()*255|0},${Math.random()*255|0},${Math.random()*255|0})`;
-      ctx.fillRect(Math.random()*W|0, Math.random()*H|0, 2, 2);
-    }
-  }
-  // Full-screen tint
-  if (glitch.tint > 0) {
-    ctx.fillStyle = glitch.tintCol;
-    ctx.fillRect(0, 0, W, H);
-  }
-  // Ghost sprites of dead enemies
-  for (const g of glitch.ghosts) {
-    if (g.t % 2 === 0) {
-      ctx.fillStyle = g.col;
-      ctx.fillRect(Math.round(g.x - camera.x), Math.round(g.y), g.w, g.h);
-    }
-  }
-}
-
 // ── Render ─────────────────────────────────────
 function render() {
   ctx.clearRect(0, 0, W, H);
@@ -1920,7 +1812,6 @@ function render() {
   drawParticles();
   drawFloatingTexts();
   drawPlayer();
-  drawGlitches();
 
   ctx.restore();
   drawHUD();
