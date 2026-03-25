@@ -1858,8 +1858,8 @@ function render() {
 // ── Loop ───────────────────────────────────────
 function loop() {
   if (state === 'menu') {
-    if (keys['ArrowLeft']  || keys['KeyA']) { keys['ArrowLeft']=keys['KeyA']=false; mainMenuItem = 0; }
-    if (keys['ArrowRight'] || keys['KeyD']) { keys['ArrowRight']=keys['KeyD']=false; mainMenuItem = 1; }
+    if (keys['ArrowLeft'])  { keys['ArrowLeft']=false; mainMenuItem = 0; }
+    if (keys['ArrowRight']) { keys['ArrowRight']=false; mainMenuItem = 1; }
     if (keys['Enter']) {
       keys['Enter'] = false;
       if (mainMenuItem === 1) {
@@ -1870,8 +1870,8 @@ function loop() {
     }
   }
   if (state === 'levelselect') {
-    if (keys['ArrowUp']   || keys['KeyW']) { keys['ArrowUp']=keys['KeyW']=false; menuSelection = Math.max(0,menuSelection-1); }
-    if (keys['ArrowDown'] || keys['KeyS']) { keys['ArrowDown']=keys['KeyS']=false; menuSelection = Math.min(LEVELS.length-1,menuSelection+1); }
+    if (keys['ArrowUp'])   { keys['ArrowUp']=false; menuSelection = Math.max(0,menuSelection-1); }
+    if (keys['ArrowDown']) { keys['ArrowDown']=false; menuSelection = Math.min(LEVELS.length-1,menuSelection+1); }
     if (keys['Enter']) {
       keys['Enter'] = false;
       const canPlay = prsntMode || menuSelection < unlockedLevels;
@@ -1914,8 +1914,8 @@ function loop() {
     }
   }
   if (state === 'paused') {
-    if (keys['ArrowUp']   || keys['KeyW']) { keys['ArrowUp']=keys['KeyW']=false; pauseSelection=(pauseSelection+3)%4; }
-    if (keys['ArrowDown'] || keys['KeyS']) { keys['ArrowDown']=keys['KeyS']=false; pauseSelection=(pauseSelection+1)%4; }
+    if (keys['ArrowUp'])   { keys['ArrowUp']=false; pauseSelection=(pauseSelection+3)%4; }
+    if (keys['ArrowDown']) { keys['ArrowDown']=false; pauseSelection=(pauseSelection+1)%4; }
     if (keys['Enter']) {
       keys['Enter'] = false;
       if (pauseSelection===0) { state='playing'; bgmPlay(); }
