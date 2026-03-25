@@ -538,7 +538,6 @@ let tutorialPage = 0;
 let tutorialReturn = 'menu'; // where to go after tutorial ('menu','playing','dead')
 let mainMenuItem = 0;   // 0=Play, 1=Tutorial
 let pauseSelection = 0; // 0=Resume 1=Restart 2=Tutorial 3=Menu
-const TUTORIAL_SEEN_KEY = 'dbong_tutorial_seen';
 let currentLevel = 0;
 let unlockedLevels = 1;
 let menuSelection = 0;
@@ -1842,11 +1841,7 @@ function loop() {
       keys['Enter'] = false;
       if (menuSelection < unlockedLevels) {
         // Show tutorial first time playing level 1
-        if (menuSelection === 0 && !localStorage.getItem(TUTORIAL_SEEN_KEY)) {
-          tutorialPage = 0; tutorialReturn = 'newgame'; state = 'tutorial';
-        } else {
-          resetGame(menuSelection);
-        }
+        resetGame(menuSelection);
       }
     }
     if (keys['Escape']) { keys['Escape']=false; state='menu'; }
@@ -1856,7 +1851,7 @@ function loop() {
     if (keys['ArrowRight'] || keys['Enter']) {
       keys['ArrowRight'] = keys['Enter'] = false;
       if (isLast) {
-        localStorage.setItem(TUTORIAL_SEEN_KEY, '1');
+
         if (tutorialReturn === 'newgame') { resetGame(0); }
         else if (tutorialReturn === 'paused') { state = 'paused'; }
         else if (tutorialReturn === 'dead') { state = 'dead'; }
