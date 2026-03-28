@@ -157,6 +157,9 @@ addEventListener('keydown', e => {
       prsntMode = true;
       unlockedLevels = LEVELS.length;
     }
+    if (menuTypeBuffer === 'gamemode') {
+      prsntMode = false;
+    }
     menuTypeBuffer = '';
   }
   if (e.code === 'KeyM') { muted = !muted; if (masterGain) masterGain.gain.value = muted ? 0 : 0.6; }
